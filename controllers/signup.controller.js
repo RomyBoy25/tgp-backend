@@ -1,101 +1,106 @@
-const User = require('../model/user.model.js')
-const mongoose = require('mongoose');
+const fs = require("fs");
+const User = require("../model/user.model");
+const removePassword = require("../utils/removePassw0rd");
 
 const signUpUser = async (req, res) => {
-      try {
-            const { alexis, email, password } = req.body;
-            
-            if (!alexis || !email || !password) {
-            return res.status(400).json({ result: false, message: 'All fields are required' });
-            }
-            const existingUser = await User.findOne({ email });
-            if (existingUser) return res.status(400).json({ result: false, message: 'Email already exists' });
+  try {
+    const {
+      firstName,
+      lastName,
+      suffix,
+      email,
+      password,
+      alexis,
+      contactNumber,
+      role,
+      chapterStatus,
+      membershipOrigin,
+      council,
+      chapter,
+      batch,
+      birthday,
+      originCouncil,
+      originChapter,
+      facebookUrl,
+      emergencyContactName,
+      emergencyContactNumber,
+      emergencyContactRelation,
+    } = req.body;
 
-            if (req.file) {
-
-                const base64Data = req.file.buffer.toString('base64');
-                newUserData.displayPic = {
-                    data: base64Data,
-                    contentType: req.file.mimetype
-                };
-            }
-
-            const user = await User.create(req.body);
-            res.status(201).json({ result: true, message: 'Triskelion created', userId: user._id });
-        } catch (err) {
-            res.status(500).json({ result: false, message: err.message });
+    if (!alexis || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Alexis, email, and password are required.",
+      });
     }
-};
-const getUserId = async (req, res) => {
-      try {
-        const { id } = req.params;
-    
-        // Validate ObjectId
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-          return res.status(400).json({ result: false, message: 'Invalid user ID' });
+
+    const welcomeCertificate = req.files?.welcomeCertificate?.[0]
+      ? {
+          url: req.files.welcomeCertificate[0].path.replace(/\\/g, "/"),
+          contentType: req.files.welcomeCertificate[0].mimetype,
+          fileName: req.files.welcomeCertificate[0].originalname,
         }
-    
-        // Fetch single user, exclude password, populate council
-        const user = await User.findById(id, '-password')
-          .populate('council', 'name status foundDate founderName')
-          .populate('chapter', 'name status foundDate founderName')
-          .lean()
-          .exec();
-    
-        if (!user) {
-          return res.status(404).json({ result: false, message: 'User not found' });
+      : null;
+
+    const displayPic = req.files?.displayPic?.[0]
+      ? {
+          data: fs
+            .readFileSync(req.files.displayPic[0].path)
+            .toString("base64"),
+          contentType: req.files.displayPic[0].mimetype,
         }
-    
-        res.json({
-          result: true,
-          message: 'Success',
-          data: user
-        });
-    
-      } catch (err) {
-        console.error(err);
-        res.status(500).json({ result: false, message: err.message });
+      : null;
+
+    const validId = req.files?.validId?.[0]
+    ? {
+        data: fs
+          .readFileSync(req.files.validId[0].path)
+          .toString("base64"),
+        contentType: req.files.validId[0].mimetype,
       }
-}
+    : null;
 
-const updateUser = async (req, res) => {
-    try {
-        const {id} = req.params;
-        const user = await User.findByIdAndUpdate(id, req.body);
-        if(!user) {
-            return res.status(404).json({message: "User not found"});
-        }
-        // if (req.body.displayPic?.data) {
-        // updateData.displayPic = {
-        //     contentType: req.body.displayPic.contentType,
-        //     data: req.body.displayPic.data.replace(/^data:image\/\w+;base64,/, "")
-        // };
-        // }
-        const updateUser = await User.findById(id);
-        res.status(200).json(updateUser);
+    const newUser = new User({
+      firstName,
+      lastName,
+      suffix,
+      email,
+      password,
+      alexis,
+      contactNumber,
+      role,
+      chapterStatus,
+      membershipOrigin,
+      council,
+      chapter,
+      batch,
+      originCouncil,
+      originChapter,
+      welcomeCertificate,
+      displayPic,
+      validId,
+      birthday,
+      facebookUrl,
+      emergencyContactName,
+      emergencyContactNumber,
+      emergencyContactRelation,
+    });
 
-    } catch (error) {
-        res.status(500).json({message: error.message})
-    }
-}
-const deleteUser = async (req, res) => {
-    try {
-        const {id} = req.params;
-        const user = await User.findByIdAndDelete(id, req.body);
-        if(!user) {
-            return res.status(404).json({message: "User not found"});
-        }
-        res.status(200).json({message: "User Deleted Successfully"});
+    await newUser.save();
 
-    } catch (error) {
-        res.status(500).json({message: error.message})
-    }
-}
-
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully.",
+      data: removePassword(newUser),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 module.exports = {
-    signUpUser,
-    getUserId,
-    updateUser,
-    deleteUser
-}
+  signUpUser,
+};

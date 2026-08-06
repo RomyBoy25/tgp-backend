@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Chapter = require('../model/chapter.model.js')
 const Council = require('../model/council.model.js')
 
+
 const createChapter = async (req, res) => {
   try {
     const { name, council, founderNames, foundDate, status, locationAddress, verifiedBy, displayPic, code } = req.body;
@@ -49,20 +50,64 @@ const createChapter = async (req, res) => {
 
 const getChapter = async (req, res) => {
   try {
-    const chapter = await Chapter.find({}, '-password').sort({ createdAt: -1 }).lean()
-    .lean().populate('council', 'name status foundDate founderName')
-    .lean().populate('founderNames', '_id firstName lastName suffix alexis')
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const status = req.query.status || "";
+
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
+
+    const skip = (page - 1) * limit;
+
+
+    const filter = {};
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { code: { $regex: search, $options: "i" } },
+        { locationAddress: { $regex: search, $options: "i" } }
+      ];
+    }
+
+
+    if (status) {
+      filter.status = status;
+    }
+
+
+    const total = await Chapter.countDocuments(filter);
+
+
+    const chapters = await Chapter.find(filter)
+      .populate('council', 'name')
+      .populate('founderNames', '_id firstName lastName')
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
 
     res.status(200).json({
       message: "Success",
       result: true,
-      data: chapter
+      data: chapters,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrevious: page > 1
+      }
     });
-  } catch (error) {
+
+
+  } catch(error) {
     res.status(500).json({
-      message: "Something went wrong",
-      result: false,
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -151,11 +196,82 @@ const updateChapter = async (req, res) => {
 //     }
 // }
 
+const getChaptersByCouncil = async (req, res) => {
+  try {
+    const { councilId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(councilId)) {
+      return res.status(400).json({
+        result: false,
+        message: 'Invalid Council ID',
+      });
+    }
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const status = req.query.status || '';
+
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      council: councilId,
+    };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { code: { $regex: search, $options: 'i' } },
+        { locationAddress: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const total = await Chapter.countDocuments(filter);
+
+    const chapters = await Chapter.find(filter)
+      .populate('council', 'name')
+      .populate('founderNames', '_id firstName lastName suffix alexis')
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return res.status(200).json({
+      result: true,
+      message: 'Success',
+      data: chapters,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrevious: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      result: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
     createChapter,
     getChapter,
     deleteChapter,
     getChapterById,
-    updateChapter
+    updateChapter,
+    getChaptersByCouncil 
 
 }
