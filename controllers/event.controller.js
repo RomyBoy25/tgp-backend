@@ -344,7 +344,6 @@ const getAllEvents = async (req, res) => {
     const search = req.query.search || "";
     const status = req.query.status || "";
 
-    // NEW
     const sortBy = req.query.sortBy || "eventDate";
     const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
 
@@ -381,9 +380,22 @@ const getAllEvents = async (req, res) => {
       .populate("chapter", "chapterName")
       .populate("council", "councilName")
       .populate("createdBy", "firstName lastName")
-      .sort({ [sortBy]: sortOrder }) // <-- Dynamic
+      .sort({ [sortBy]: sortOrder })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
+
+    // Compute total expense per event
+    for (const event of events) {
+      const expenses = await EventExpense.find({
+        event: event._id,
+      }).select("amount");
+
+      event.totalExpense = expenses.reduce(
+        (sum, expense) => sum + expense.amount,
+        0
+      );
+    }
 
     res.status(200).json({
       success: true,
