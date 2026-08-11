@@ -9,6 +9,7 @@ const {
   getEventDetails,
   getAllEvents,
   deleteEvent,
+  updateEventDetails
 } = require("../controllers/event.controller");
 
 const {
@@ -25,6 +26,7 @@ router.post("/:id/attendance", createEvent);
 router.get("/", getAllEvents);
 router.get("/:eventId", getEventDetails);
 router.delete("/:eventId", deleteEvent);
+router.put("/:eventId", updateEventDetails);
 
 // Attendance
 router.get("/:eventId/attendance", getAttendance);

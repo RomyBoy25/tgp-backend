@@ -337,6 +337,67 @@ const getEventDetails = async (req, res) => {
   }
 };
 
+
+const updateEventDetails = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const {
+      title,
+      description,
+      eventType,
+      eventDate,
+      startTime,
+      endTime,
+      venue,
+      attendanceMode,
+    } = req.body;
+
+    // Find event first
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found.",
+      });
+    }
+
+    // Update only editable event fields
+    event.title = title;
+    event.description = description;
+    event.eventType = eventType;
+    event.eventDate = eventDate;
+    event.startTime = startTime;
+    event.endTime = endTime;
+    event.venue = venue;
+    event.attendanceMode = attendanceMode;
+
+    await event.save();
+
+    // Return updated event with populated information
+    const updatedEvent = await Event.findById(eventId)
+      .populate("chapter", "chapterName")
+      .populate("council", "councilName")
+      .populate("createdBy", "firstName lastName alexis");
+
+    res.json({
+      success: true,
+      message: "Event updated successfully.",
+      data: updatedEvent,
+    });
+  } catch (err) {
+    console.error("UPDATE EVENT DETAILS ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+
 const getAllEvents = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
@@ -425,5 +486,6 @@ module.exports = {
   closeEvent,
   getEventDetails,
   getAllEvents,
-  deleteEvent
+  deleteEvent,
+  updateEventDetails
 };

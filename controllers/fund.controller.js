@@ -55,6 +55,59 @@ const createFund = async (req, res) => {
   }
 };
 
+const updateFund = async (req, res) => {
+  try {
+    const { fundId } = req.params;
+
+    const {
+      title,
+      amount,
+      description,
+      deadline,
+    } = req.body;
+
+    const chapterId = req.user.chapterId;
+
+    // Find fund belonging to the current user's chapter
+    const fund = await Fund.findOne({
+      _id: fundId,
+      chapter: chapterId,
+    });
+
+    if (!fund) {
+      return sendError(
+        res,
+        404,
+        "Fund not found."
+      );
+    }
+
+    // Update fund information
+    fund.title = title;
+    fund.amount = amount;
+    fund.description = description;
+    fund.deadline = deadline;
+
+    await fund.save();
+
+    return sendSuccess(
+      res,
+      "Fund updated successfully.",
+      fund
+    );
+
+  } catch (err) {
+    console.error("UPDATE FUND ERROR:", err);
+
+    return sendError(
+      res,
+      500,
+      "Failed to update fund.",
+      err.message
+    );
+  }
+};
+
 
 const getFunds = async (req, res) => {
   try {
@@ -293,5 +346,6 @@ module.exports = {
   getFunds,
   getFundById,
    updatePaymentStatus,
-   deleteFund
+   deleteFund,
+   updateFund
 };

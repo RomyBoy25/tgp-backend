@@ -7,13 +7,20 @@ const {
   getPledgeById,
   searchMembers,
   addContribution,
-  deletePledge
+  deletePledge,
+  updatePledge,
+  deleteContribution
 } = require("../controllers/pledge.controller");
 
 
 router.post(
   "/",
   createPledge
+);
+
+router.put(
+  "/:pledgeId",
+  updatePledge
 );
 
 
@@ -38,6 +45,11 @@ router.get(
 router.post(
   "/:pledgeId/contribution",
   addContribution
+);
+
+router.delete(
+  '/contributions/:contributionId',
+  deleteContribution,
 );
 
 router.delete("/:pledgeId", deletePledge);

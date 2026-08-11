@@ -7,12 +7,14 @@ const {
     getFunds,
     getFundById,
     updatePaymentStatus,
-    deleteFund
+    deleteFund,
+    updateFund
 } = require("../controllers/fund.controller");
 
 router.post("/", createFund);
 router.get("/", getFunds);
 router.get("/:fundId", getFundById);
+router.put("/:fundId", updateFund);
 router.put(
   "/:fundId/payments/:paymentId", updatePaymentStatus
 );

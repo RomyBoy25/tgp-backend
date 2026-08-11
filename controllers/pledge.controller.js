@@ -37,6 +37,59 @@ const createPledge = async (req, res) => {
   }
 };
 
+const updatePledge = async (req, res) => {
+  try {
+    const { pledgeId } = req.params;
+    const {
+      title,
+      description,
+      deadline,
+    } = req.body;
+
+    const pledge = await Pledge.findById(pledgeId);
+
+    if (!pledge) {
+      return sendError(
+        res,
+        404,
+        "Pledge not found."
+      );
+    }
+
+    // Optional: make sure the pledge belongs to the
+    // current user's chapter
+    if (
+      pledge.chapter &&
+      pledge.chapter.toString() !== req.user.chapterId.toString()
+    ) {
+      return sendError(
+        res,
+        403,
+        "You are not authorized to update this pledge."
+      );
+    }
+
+    pledge.title = title;
+    pledge.description = description;
+    pledge.deadline = deadline;
+
+    const updatedPledge = await pledge.save();
+
+    return sendSuccess(
+      res,
+      "Pledge updated successfully.",
+      updatedPledge
+    );
+  } catch (err) {
+    return sendError(
+      res,
+      500,
+      "Failed to update pledge.",
+      err.message
+    );
+  }
+};
+
 const getPledges = async (req, res) => {
   try {
     const chapterId = req.user.chapterId;
@@ -434,6 +487,41 @@ const deletePledge = async (req, res) => {
   }
 };
 
+const deleteContribution = async (req, res) => {
+  try {
+    const { contributionId } = req.params;
+
+    const contribution = await PledgeContribution.findById(
+      contributionId,
+    );
+
+    if (!contribution) {
+      return sendError(
+        res,
+        404,
+        'Contribution not found.',
+      );
+    }
+
+    await PledgeContribution.findByIdAndDelete(
+      contributionId,
+    );
+
+    return sendSuccess(
+      res,
+      'Contribution deleted successfully.',
+      contribution,
+    );
+  } catch (err) {
+    return sendError(
+      res,
+      500,
+      'Failed to delete contribution.',
+      err.message,
+    );
+  }
+};
+
 module.exports = {
   createPledge,
   getPledges,
@@ -441,5 +529,7 @@ module.exports = {
   searchMembers,
   createContribution,
   addContribution,
-  deletePledge
+  deletePledge,
+  updatePledge,
+  deleteContribution
 };

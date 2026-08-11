@@ -10,7 +10,8 @@ const authRoutes = require('./routes/auth.route.js');
 const eventRoute = require('./routes/event.route.js')
 const batchRoute = require('./routes/batch.route.js')
 const fundRoute = require('./routes/fund.route.js')
-const pledgeRoute = require('./routes/pledge.route.js')
+const pledgeRoute = require('./routes/pledge.route.js');
+const publicRoute = require('./routes/public.route.js');
 const authMiddleware = require('./middleware/auth.js');
 const path = require('path');
 
@@ -24,7 +25,7 @@ app.use(
     limit: "50mb",
   })
 );
-
+app.use("/api/public", publicRoute);
 // Routes
 app.use("/api/users", authMiddleware, userRoute);
 app.use("/api/chapters",authMiddleware, chapterRoute);
