@@ -12,7 +12,7 @@ const getPublicUser = async (req, res) => {
 
     const user = await User.findById(id)
       .select(
-        "firstName lastName suffix alexis birthday displayPic chapterStatus role batch council chapter"
+        "firstName lastName suffix alexis birthday displayPic chapterStatus role batch council chapter emergencyContactName emergencyContactRelation emergencyContactNumber"
       )
       .populate("council", "name displayPic")
       .populate("chapter", "name displayPic foundDate")
