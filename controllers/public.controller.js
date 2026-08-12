@@ -14,8 +14,9 @@ const getPublicUser = async (req, res) => {
       .select(
         "firstName lastName suffix alexis birthday displayPic chapterStatus role batch council chapter"
       )
-      .populate("council", "name")
-      .populate("chapter", "name")
+      .populate("council", "name displayPic")
+      .populate("chapter", "name displayPic foundDate")
+      .populate("batch")
       .populate("batch", "batchName triskelionBirth")
       .lean();
 
