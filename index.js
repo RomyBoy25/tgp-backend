@@ -25,7 +25,7 @@ app.use(
     limit: "50mb",
   })
 );
-app.use("/api/public", publicRoute);
+app.use("/api/member-id", publicRoute);
 // Routes
 app.use("/api/users", authMiddleware, userRoute);
 app.use("/api/chapters",authMiddleware, chapterRoute);
