@@ -143,6 +143,8 @@ const userSchema = new mongoose.Schema(
         "Resident",
         "Founder",
         "Adviser",
+        "Infocom",
+        "Defense",
         "Grand Triskelion",
         "Deputy Grand Triskelion",
         "Master Keeper of Scroll",
