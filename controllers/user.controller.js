@@ -19,7 +19,7 @@ const getUsers = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = {
-      chapter: chapterId,
+      chapter: new mongoose.Types.ObjectId(chapterId),
     };
 
     // Search filter
@@ -40,23 +40,12 @@ const getUsers = async (req, res) => {
     // Total records
     const total = await User.countDocuments(filter);
 
-    /*
-     * Resident users always go to the bottom.
-     *
-     * 0 = Non-resident
-     * 1 = Resident
-     */
-    const sort = {
-      residentPriority: 1,
-      [sortBy]: sortOrder,
-    };
-
+    // Sort Resident to the bottom
     const users = await User.aggregate([
       {
         $match: filter,
       },
 
-      // Create temporary sorting field
       {
         $addFields: {
           residentPriority: {
@@ -78,77 +67,43 @@ const getUsers = async (req, res) => {
         },
       },
 
-      // Remove password
       {
-        $project: {
-          password: 0,
+        $sort: {
+          residentPriority: 1,
+          [sortBy]: sortOrder,
         },
       },
 
-      // Populate Council
-      {
-        $lookup: {
-          from: "councils",
-          localField: "council",
-          foreignField: "_id",
-          as: "council",
-        },
-      },
-
-      {
-        $unwind: {
-          path: "$council",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-
-      // Populate Chapter
-      {
-        $lookup: {
-          from: "chapters",
-          localField: "chapter",
-          foreignField: "_id",
-          as: "chapter",
-        },
-      },
-
-      {
-        $unwind: {
-          path: "$chapter",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-
-      // Populate Batch
-      {
-        $lookup: {
-          from: "batches",
-          localField: "batch",
-          foreignField: "_id",
-          as: "batch",
-        },
-      },
-
-      {
-        $unwind: {
-          path: "$batch",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-
-      // Sort Resident to bottom first,
-      // then apply the user's selected sorting
-      {
-        $sort: sort,
-      },
-
-      // Pagination AFTER sorting
       {
         $skip: skip,
       },
 
       {
         $limit: limit,
+      },
+
+      // Remove password and temporary sorting field
+      {
+        $project: {
+          password: 0,
+          residentPriority: 0,
+        },
+      },
+    ]);
+
+    // Populate relationships just like the original query
+    await User.populate(users, [
+      {
+        path: "council",
+        select: "name status foundDate founderName",
+      },
+      {
+        path: "chapter",
+        select: "name",
+      },
+      {
+        path: "batch",
+        select: "batchName",
       },
     ]);
 
@@ -166,6 +121,8 @@ const getUsers = async (req, res) => {
       }
     );
   } catch (err) {
+    console.error("getUsers error:", err);
+
     return sendError(
       res,
       500,
