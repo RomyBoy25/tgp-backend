@@ -19,10 +19,9 @@ const getUsers = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = {
-      chapter: new mongoose.Types.ObjectId(chapterId),
+      chapter: chapterId,
     };
 
-    // Search filter
     if (search) {
       filter.$or = [
         { firstName: { $regex: search, $options: "i" } },
@@ -32,80 +31,21 @@ const getUsers = async (req, res) => {
       ];
     }
 
-    // Status filter
     if (status) {
       filter.chapterStatus = status;
     }
 
-    // Total records
     const total = await User.countDocuments(filter);
 
-    // Sort Resident to the bottom
-    const users = await User.aggregate([
-      {
-        $match: filter,
-      },
-
-      {
-        $addFields: {
-          residentPriority: {
-            $cond: [
-              {
-                $eq: [
-                  {
-                    $toLower: {
-                      $ifNull: ["$chapterStatus", ""],
-                    },
-                  },
-                  "resident",
-                ],
-              },
-              1,
-              0,
-            ],
-          },
-        },
-      },
-
-      {
-        $sort: {
-          residentPriority: 1,
-          [sortBy]: sortOrder,
-        },
-      },
-
-      {
-        $skip: skip,
-      },
-
-      {
-        $limit: limit,
-      },
-
-      // Remove password and temporary sorting field
-      {
-        $project: {
-          password: 0,
-          residentPriority: 0,
-        },
-      },
-    ]);
-
-    // Populate relationships just like the original query
-    await User.populate(users, [
-      {
-        path: "council",
-        select: "name status foundDate founderName",
-      },
-      {
-        path: "chapter",
-        select: "name",
-      },
-      {
-        path: "batch",
-        select: "batchName",
-      },
-    ]);
+    const users = await User.find(filter)
+      .select("-password")
+      .populate("council", "name status foundDate founderName")
+      .populate("chapter", "name")
+      .populate("batch", "batchName")
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
     return sendSuccess(
       res,
@@ -120,8 +60,8 @@ const getUsers = async (req, res) => {
         hasPrevious: page > 1,
       }
     );
+
   } catch (err) {
-    console.error("getUsers error:", err);
 
     return sendError(
       res,
@@ -129,6 +69,7 @@ const getUsers = async (req, res) => {
       "Failed to retrieve users.",
       err.message
     );
+
   }
 };
 
