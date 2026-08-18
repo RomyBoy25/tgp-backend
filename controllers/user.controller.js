@@ -22,6 +22,7 @@ const getUsers = async (req, res) => {
       chapter: chapterId,
     };
 
+    // Search filter
     if (search) {
       filter.$or = [
         { firstName: { $regex: search, $options: "i" } },
@@ -31,21 +32,125 @@ const getUsers = async (req, res) => {
       ];
     }
 
+    // Status filter
     if (status) {
       filter.chapterStatus = status;
     }
 
+    // Total records
     const total = await User.countDocuments(filter);
 
-    const users = await User.find(filter)
-      .select("-password")
-      .populate("council", "name status foundDate founderName")
-      .populate("chapter", "name")
-      .populate("batch", "batchName")
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    /*
+     * Resident users always go to the bottom.
+     *
+     * 0 = Non-resident
+     * 1 = Resident
+     */
+    const sort = {
+      residentPriority: 1,
+      [sortBy]: sortOrder,
+    };
+
+    const users = await User.aggregate([
+      {
+        $match: filter,
+      },
+
+      // Create temporary sorting field
+      {
+        $addFields: {
+          residentPriority: {
+            $cond: [
+              {
+                $eq: [
+                  {
+                    $toLower: {
+                      $ifNull: ["$chapterStatus", ""],
+                    },
+                  },
+                  "resident",
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+
+      // Remove password
+      {
+        $project: {
+          password: 0,
+        },
+      },
+
+      // Populate Council
+      {
+        $lookup: {
+          from: "councils",
+          localField: "council",
+          foreignField: "_id",
+          as: "council",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$council",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Populate Chapter
+      {
+        $lookup: {
+          from: "chapters",
+          localField: "chapter",
+          foreignField: "_id",
+          as: "chapter",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$chapter",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Populate Batch
+      {
+        $lookup: {
+          from: "batches",
+          localField: "batch",
+          foreignField: "_id",
+          as: "batch",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$batch",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Sort Resident to bottom first,
+      // then apply the user's selected sorting
+      {
+        $sort: sort,
+      },
+
+      // Pagination AFTER sorting
+      {
+        $skip: skip,
+      },
+
+      {
+        $limit: limit,
+      },
+    ]);
 
     return sendSuccess(
       res,
@@ -60,16 +165,13 @@ const getUsers = async (req, res) => {
         hasPrevious: page > 1,
       }
     );
-
   } catch (err) {
-
     return sendError(
       res,
       500,
       "Failed to retrieve users.",
       err.message
     );
-
   }
 };
 
