@@ -14,6 +14,9 @@ const chapterSchema = new mongoose.Schema({
   locationAddress: {
     type: String,
   },
+  facebookUrl: {
+    type: String,
+  },
   founderNames: [
     {
       type: mongoose.Schema.Types.ObjectId,

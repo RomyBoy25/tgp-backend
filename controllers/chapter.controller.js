@@ -5,7 +5,7 @@ const Council = require('../model/council.model.js')
 
 const createChapter = async (req, res) => {
   try {
-    const { name, council, founderNames, foundDate, status, locationAddress, verifiedBy, displayPic, code } = req.body;
+    const { name, council, founderNames, foundDate, status, locationAddress, verifiedBy, displayPic, code, facebookUrl } = req.body;
 
     // 1️⃣ Check if council exists
     const councilExists = await Council.findById(council);
@@ -26,6 +26,7 @@ const createChapter = async (req, res) => {
       council,
       displayPic,
       code,
+      facebookUrl
     });
 
     await chapter.save();
@@ -157,16 +158,6 @@ const getChapterById = async (req, res) => {
 };
 
 
-// const getUser = async (req, res) => {
-//     try {
-//         const {id} = req.params;
-//         const user = await User.findById(id)
-//         res.status(200).json(user);
-//     } catch (error) {
-//         res.status(500).json({message: error.message})
-//     }
-// }
-
 const updateChapter = async (req, res) => {
     try {
         const {id} = req.params;
@@ -182,19 +173,6 @@ const updateChapter = async (req, res) => {
     }
 }
 
-// const deleteUser = async (req, res) => {
-//     try {
-//         const {id} = req.params;
-//         const user = await User.findByIdAndDelete(id, req.body);
-//         if(!user) {
-//             return res.status(404).json({message: "User not found"});
-//         }
-//         res.status(200).json({message: "User Deleted Successfully"});
-
-//     } catch (error) {
-//         res.status(500).json({message: error.message})
-//     }
-// }
 
 const getChaptersByCouncil = async (req, res) => {
   try {
@@ -273,5 +251,4 @@ module.exports = {
     getChapterById,
     updateChapter,
     getChaptersByCouncil 
-
 }
