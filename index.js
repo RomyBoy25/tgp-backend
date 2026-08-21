@@ -12,6 +12,7 @@ const batchRoute = require('./routes/batch.route.js')
 const fundRoute = require('./routes/fund.route.js')
 const pledgeRoute = require('./routes/pledge.route.js');
 const publicRoute = require('./routes/public.route.js');
+const disciplinaryAction = require('./routes/disciplinaryAction.route.js');
 const authMiddleware = require('./middleware/auth.js');
 const path = require('path');
 
@@ -34,6 +35,7 @@ app.use("/api/events", authMiddleware, eventRoute);
 app.use("/api/batches", authMiddleware, batchRoute);
 app.use("/api/funds", authMiddleware, fundRoute );
 app.use("/api/pledges", authMiddleware, pledgeRoute );
+app.use("/api/disciplinary-actions", authMiddleware, disciplinaryAction );
 app.use("/api/auth", authRoutes);
 
 
